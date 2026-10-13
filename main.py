@@ -7,55 +7,57 @@ from google import genai
 from gtts import gTTS
 import pygame ,os
 from dotenv import load_dotenv
+from google.genai import types
 
 recognizer = sr.Recognizer()
 
-newsapi = "1339c40a98cb4397ab46071325df18de" 
+newsapi = "1339c40a98cb4397ab94c071325df18de" 
 
 def speak_old(text):
     engine = pyttsx3.init()
     engine.say(text)
     engine.runAndWait()
-    engine.stop()
 
 def speak(text):
     tts = gTTS(text)
-    tts.save('tempo.mp3')
+    tts.save('hello.mp3')
 
     pygame.mixer.init()
-    pygame.mixer.music.load('tempo.mp3')
+    pygame.mixer.music.load('hello.mp3')
     pygame.mixer.music.play()
 
     while pygame.mixer.music.get_busy():
         pygame.time.Clock().tick(10)
 
     pygame.mixer.music.unload()
-    os.remove('tempo.mp3')
+    os.remove('hello.mp3')
 
 load_dotenv()
 def aiProcess(command):
     client = genai.Client(
-      api_key=os.environ["GEMINI_API_KEY"])
+      api_key="Your_APIkey_here")
 
-    interaction = client.interactions.create(
-      agent="antigravity-preview-09-2026",
-      input=command,
-      environment="remote"
+    response = client.models.generate_content(
+      model = "gemini-3.5-flash-lite",
+      contents = command,
+      config=types.GenerateContentConfig(
+            system_instruction="You are Relaxo,a friendly assistant. Answer in one or two short sentences. No markdown.",
+            max_output_tokens=100,
+            automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
 )
-    print(f"Interaction ID: {interaction.id}")
-    print(f"Environment ID: {interaction.environment_id}")
-    print(f"Output: {interaction.output_text}")
-    return interaction.output_text
+    )
+    return (response.text or "").strip()
+
 
 def processCommand(c):
     if "open google" in c.lower():
         webbrowser.open('https://google.com')
 
-    elif "open skyfall" in c.lower():
+    elif "open youtube" in c.lower():
+        webbrowser.open("https://youtube.com")
+        
+    elif "play backbone" in c.lower():
         webbrowser.open("https://www.youtube.com/shorts/EzYRorLpn0U")
-
-    elif "open dollar" in c.lower():
-        webbrowser.open("https://www.youtube.com/shorts/kDhFYO_5sa8")
 
     elif c.lower().startswith('play'):
         song = c.lower().split(" ")[1]
@@ -66,7 +68,7 @@ def processCommand(c):
         try:
             r = requests.get(
                 "https://newsapi.org/v2/top-headlines",
-                params={"country": "in", "apiKey": newsapi},
+                params={"country": "us", "apiKey": newsapi},
                 timeout=10,
             )
             r.raise_for_status()
@@ -83,7 +85,9 @@ def processCommand(c):
     # Let Google.Genai handle the request
     else:
         output = aiProcess(c)
-        speak(output)
+        print(f"Output:{output}")
+        if output:
+            speak(output)
 
 
 if __name__ == "__main__":
